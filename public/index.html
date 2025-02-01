@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Network Security Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background-color: #1a237e;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .events-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .event {
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #ccc;
+            background-color: #f8f9fa;
+        }
+        .event.critical { border-left-color: #d32f2f; background-color: #ffebee; }
+        .event.high { border-left-color: #f57c00; background-color: #fff3e0; }
+        .event.medium { border-left-color: #ffd600; background-color: #fffde7; }
+        .event.low { border-left-color: #388e3c; background-color: #e8f5e9; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1a237e;
+        }
+        .country-info {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>Real-Time Network Security Monitoring</h1>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total Packets</h3>
+                <div id="total-packets" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Critical Events</h3>
+                <div id="critical-events" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Threats</h3>
+                <div id="active-threats" class="stat-value">0</div>
+            </div>
+        </div>
+
+        <div class="events-container">
+            <h2>Security Events</h2>
+            <div id="events-list"></div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('stats-update', (stats) => {
+            document.getElementById('total-packets').textContent = stats.totalPackets;
+            document.getElementById('critical-events').textContent = stats.criticalEvents;
+            document.getElementById('active-threats').textContent = stats.activeThreats;
+        });
+
+        socket.on('security-event', (event) => {
+            // Create event element
+            const eventElement = document.createElement('div');
+            eventElement.className = `event ${event.severity}`;
+            eventElement.innerHTML = `
+                <strong>${new Date(event.timestamp).toLocaleTimeString()}</strong> - 
+                ${event.type.replace(/_/g, ' ').toUpperCase()}<br>
+                Severity: ${event.severity.toUpperCase()}<br>
+                Source IP: ${event.sourceIP} → Destination IP: ${event.destinationIP}<br>
+                Port: ${event.port} | Protocol: ${event.protocol}<br>
+                <div class="country-info">
+                    Source Country: ${event.sourceCountry} | Destination Country: ${event.destinationCountry}
+                </div>
+                Description: ${event.description}
+            `;
+
+            // Add to list
+            const eventsList = document.getElementById('events-list');
+            eventsList.insertBefore(eventElement, eventsList.firstChild);
+
+            // Keep only last 20 events
+            if (eventsList.children.length > 20) {
+                eventsList.removeChild(eventsList.lastChild);
+            }
+        });
+    </script>
+</body>
+</html>
